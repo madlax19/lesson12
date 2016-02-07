@@ -106,6 +106,7 @@
                 product.complete = @NO;
             } else {
                 product.complete = @YES;
+                [self showEditProductPrice:product];
             }
             [self.tableView reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationFade];
     }]];
@@ -125,7 +126,7 @@
  }
 
 -(void) showEditProductAlert:(CDProduct*) product {
-    UIAlertController *controller = [UIAlertController alertControllerWithTitle:@"Edit Product" message:@"Edit current Name" preferredStyle:UIAlertControllerStyleAlert];
+    UIAlertController *controller = [UIAlertController alertControllerWithTitle:@"Edit Product" message:@"" preferredStyle:UIAlertControllerStyleAlert];
     UIAlertAction *action = [UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
         
     }];
@@ -160,6 +161,32 @@
     [controller addAction:action];
     [self presentViewController:controller animated:YES completion:NULL];
   
+}
+
+-(void) showEditProductPrice:(CDProduct*) product {
+    UIAlertController *controller = [UIAlertController alertControllerWithTitle:@"Set Product Price" message:@"" preferredStyle:UIAlertControllerStyleAlert];
+    UIAlertAction *action = [UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
+        
+    }];
+    [controller addAction:action];
+    
+    [controller addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
+        textField.placeholder = @"Product price";
+        textField.keyboardType = UIKeyboardTypeDecimalPad;
+        textField.text = product.price.stringValue;
+    }];
+    
+    
+    action = [UIAlertAction actionWithTitle:@"Update" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        UITextField *priceTextField = controller.textFields[0];
+
+        product.price = [NSDecimalNumber decimalNumberWithString:priceTextField.text];
+        [[CoreDataManager sharedInstance] saveContext];
+        [self refreshData];
+    }];
+    
+    [controller addAction:action];
+    [self presentViewController:controller animated:YES completion:NULL];
 }
 
 #pragma mark - Table view data source
