@@ -48,17 +48,22 @@
 
 
 -(void) addNewProduct:(id)sender {
-    UIAlertController *controller = [UIAlertController alertControllerWithTitle:@"New Basket" message:@"Enter name" preferredStyle:UIAlertControllerStyleAlert];
+    UIAlertController *controller = [UIAlertController alertControllerWithTitle:@"New Product" message:@"Enter name" preferredStyle:UIAlertControllerStyleAlert];
     UIAlertAction *action = [UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
         
     }];
     [controller addAction:action];
     [controller addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
-        textField.placeholder = @"Basket name";
+        textField.placeholder = @"Product name";
+    }];
+    [controller addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
+        textField.placeholder = @"Product count";
+        textField.keyboardType = UIKeyboardTypeNumberPad;
     }];
     action = [UIAlertAction actionWithTitle:@"Create" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         UITextField *textField = controller.textFields[0];
-        [self createProductWithName:textField.text];
+        UITextField *countTextField = controller.textFields[1];
+        [self createProductWithName:textField.text count:[NSDecimalNumber decimalNumberWithString:countTextField.text]];
     }];
     
     [controller addAction:action];
@@ -66,11 +71,12 @@
 }
 
 
--(void) createProductWithName:(NSString *)name {
+-(void) createProductWithName:(NSString *)name count:(NSDecimalNumber*) count{
     NSManagedObjectContext *context = [CoreDataManager sharedInstance].managedObjectContext;
     CDProduct *product = [NSEntityDescription insertNewObjectForEntityForName:[[CDProduct class] description]
                                                      inManagedObjectContext:context];
     product.name = name;
+    product.count = count;
     [self.basket addProductsObject:product];
     [[CoreDataManager sharedInstance] saveContext];
     [self refreshData];
@@ -88,14 +94,73 @@
 }
 
 -(void) tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
-    CDProduct *product = self.items[indexPath.row];
-    if ([product.complete boolValue]) {
-        product.complete = @NO;
-    } else {
-        product.complete = @YES;
-    }
-    [self.tableView reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationFade];
+   CDProduct *product = self.items[indexPath.row];
+    
+    UIAlertController *controller = [UIAlertController alertControllerWithTitle:@"Edit Product" message:@"" preferredStyle:UIAlertControllerStyleActionSheet];
+    
+    [controller addAction:[UIAlertAction actionWithTitle:@"Edit" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        [self showEditProductAlert:product];
+    }]];
+    [controller addAction:[UIAlertAction actionWithTitle:@"Mark" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+            if ([product.complete boolValue]) {
+                product.complete = @NO;
+            } else {
+                product.complete = @YES;
+            }
+            [self.tableView reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationFade];
+    }]];
+    [controller addAction:[UIAlertAction actionWithTitle:@"Delete" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        NSManagedObjectContext *context = [CoreDataManager sharedInstance].managedObjectContext;
+        [context deleteObject:product];
+        [[CoreDataManager sharedInstance] saveContext];
+        [self refreshData];
+
+    }]];
+    [controller addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
+        
+    }]];
+    
+    [self presentViewController:controller animated:YES completion:NULL];
+
  }
+
+-(void) showEditProductAlert:(CDProduct*) product {
+    UIAlertController *controller = [UIAlertController alertControllerWithTitle:@"Edit Product" message:@"Edit current Name" preferredStyle:UIAlertControllerStyleAlert];
+    UIAlertAction *action = [UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
+        
+    }];
+    [controller addAction:action];
+    [controller addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
+        textField.placeholder = @"Product name";
+        textField.text = product.name;
+    }];
+    [controller addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
+        textField.placeholder = @"Product count";
+        textField.keyboardType = UIKeyboardTypeNumberPad;
+        textField.text = product.count.stringValue;
+    }];
+    [controller addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
+        textField.placeholder = @"Product price";
+        textField.text = product.price.stringValue;
+        textField.keyboardType = UIKeyboardTypeDecimalPad;
+    }];
+
+    action = [UIAlertAction actionWithTitle:@"Update" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        UITextField *textField = controller.textFields[0];
+        UITextField *countTextField = controller.textFields[1];
+        UITextField *priceTextField = controller.textFields[2];
+
+        product.name = textField.text;
+        product.count = [NSDecimalNumber decimalNumberWithString:countTextField.text];
+        product.price = [NSDecimalNumber decimalNumberWithString:priceTextField.text];
+        [[CoreDataManager sharedInstance] saveContext];
+        [self refreshData];
+    }];
+    
+    [controller addAction:action];
+    [self presentViewController:controller animated:YES completion:NULL];
+  
+}
 
 #pragma mark - Table view data source
 
